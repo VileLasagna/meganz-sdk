@@ -138,6 +138,9 @@ int attempts = 0;
 std::string ephemeralFirstname;
 std::string ephemeralLastName;
 
+// is cowsay available?
+static bool hasCow = false;
+
 void uploadLocalPath(nodetype_t type, std::string name, const LocalPath& localname, Node* parent, const std::string targetuser, DBTableTransactionCommitter& committer, int& total, bool recursive, VersioningOption vo);
 
 #ifdef ENABLE_SYNC
@@ -3443,6 +3446,10 @@ autocomplete::ACN autocompleteSyntax()
            sequence(text("driveid"),
                     either(sequence(text("get"), localFSFolder()),
                            sequence(text("set"), localFSFolder(), opt(text("force"))))));
+    if(hasCow)
+    {
+        p->Add(exec_cowsay, sequence(text("cowsay"),param("str"),opt(param("str")),opt(param("str")),opt(param("str")),opt(param("str")),opt(param("str")),opt(param("str")),opt(param("str")),opt(param("str"))));
+    }
 
     return autocompleteTemplate = std::move(p);
 }
@@ -7175,6 +7182,21 @@ void exec_driveid(autocomplete::ACState& s)
          << endl;
 }
 
+void exec_cowsay(autocomplete::ACState& s)
+{
+    std::string str{"cowsay "};
+    for(size_t i = 1; i < s.words.size(); i++)
+    {
+        if(i > 1)
+        {
+            str += " ";
+        }
+        str += s.words[i].s;
+    }
+    system(str.c_str());
+
+}
+
 #ifdef USE_DRIVE_NOTIFICATIONS
 void DemoApp::drive_presence_changed(bool appeared, const LocalPath& driveRoot)
 {
@@ -8769,6 +8791,12 @@ int main(int argc, char* argv[])
                 );
          });
 
+#if !defined(WIN32) && !defined(_WIN32)
+    //Which returns the number of failed arguments, or -1 when no `programname' was given.
+    //Also, we're just using it for availability. We don't want it's output
+    hasCow = !system("which cowsay >/dev/null 2>/dev/null");
+#endif
+
     console = new CONSOLE_CLASS;
 
 #ifdef GFX_CLASS
@@ -8848,6 +8876,7 @@ int main(int argc, char* argv[])
 #if defined(USE_OPENSSL) && !defined(OPENSSL_IS_BORINGSSL)
     delete CurlHttpIO::sslMutexes;
 #endif
+
 
 #if defined(_WIN32) && defined(_DEBUG)
 
